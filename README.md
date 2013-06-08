@@ -1,13 +1,12 @@
+# HTXPath README
 
-===== HTXPath README =====
-
-* What is it for?
+## What is it for?
 
 HTXPath is a python module which simplifies the task of extracting pieces of data from [x]html (or like) documents.
 
 You specify a PATH string (somewhat similar in syntax and principles to XPath) that defines an unambiguous set of elements within a document.
 
-* Why HTXPath?
+## Why HTXPath?
 
 First of all, I haven't found any python libraries which were intended for the sole purpose of web page data harvesting.
 
@@ -18,33 +17,33 @@ That's when I tried BeautifulSoup - the only viable solution I found on the net.
 
 So what about the one-night hand-crafted solution that is HTXPath you ask?
 
-Cutting to the chase:
-
 It's fast and doesn't require much memory because it doesn't preparse the data into a friedly structure but rather processes it as a stream using regexps. It doesn't care about standards' compliance - it goes where you need it to ingoring all that isn't needed to get there.
 
-It's written in Python. ;)
+## HTML and regexps? Huh? Are you insane?
 
-* Features
+It uses regexps only find small chunks of data in small chunks of data. The general approach is stack based as it is the simplest sane solution for parsing nested blocks of data.
 
-> Fast, saves memory
-> Familiar syntax (similar to XPath)
-> Escapes CDATA
-> Fixes orphaned tags:
-	Closes tags which doesn't have '/' or a corresponding closing tag. Removes closing tags which doesn't have opening ones.
-> Copes with badly nested tags in SOME situations.
-	SO DON'T COUNT ON IT!
-> Should work well with UNICODE input.
+## Features
+
+* Fast, saves memory
+* Familiar syntax (similar to XPath)
+* Escapes CDATA
+* Fixes orphaned tags:
+    Closes tags which doesn't have '/' or a corresponding closing tag. Removes closing tags which doesn't have opening ones.
+* Copes with badly nested tags in SOME situations.
+    SO DON'T COUNT ON IT!
+* Should work well with UNICODE input.
 		
-==== BASIC USAGE INSTRUCTIONS ====
+### BASIC USAGE INSTRUCTIONS
 
 Before you start:
-> HTXPath strips documents of HTML comments and scripts before even parsing begins. That probably will be fixed sometime.
-> DOCTYPE is also stripped and it won't be fixed because there are plenty of ways to get it without using such sophisticated (yeah, right ;)) tools.
-> CDATA is liquidated but its content is left intact with crucial html entities escaped.
+* HTXPath strips documents of HTML comments and scripts before even parsing begins. That probably will be fixed sometime.
+* DOCTYPE is also stripped and it won't be fixed because there are plenty of ways to get it without using such sophisticated (yeah, right ;)) tools.
+* CDATA is liquidated but its content is left intact with crucial html entities escaped.
 
 Probably the only function you will be needing is
 
-	def find(xml, pth):
+* `def find(xml, pth)`
 
 Where xml is your data (not necesarilly XML) and pth is the "command path string" (referred to as THE PATH [to the geek garden of pleasure ;)]). Function will return a list (always) of strings containig matched tags with everything inside them, so you can extract their attributes.
 
@@ -58,15 +57,11 @@ Single slash tells the parser to match the command only to tags nested directly 
 A command can have multiple conditions (ex, div[class=test][id=main]). The command matched the tag when all conditions are met.
 
 Contidtion types reference:
-> [number] - ex. div[4] means that the fourth div within current scope is matched
-
-> [attribute=value] - self-explanatory
-
-> [attribute^value] - attribute starts with value
-
-> [attribute~value] - attribute contains value
-
-> [#attribute] - matches if attribute is present in the tag regardless of its value
+* [number] - ex. div[4] means that the fourth div within current scope is matched
+* [attribute=value] - self-explanatory
+* [attribute^value] - attribute starts with value
+* [attribute~value] - attribute contains value
+* [#attribute] - matches if attribute is present in the tag regardless of its value
 
 Each of the qualifiers (#,^,~,=) can be negated with "!" sign (!#,!^,!~,!=).
 
@@ -78,13 +73,13 @@ def getAttributes(xml)
 
 It returns a dictionary of attributes with their corresponding values of the outer wrapping tag (in other words first encountered) in the xml string. Just feed it with an element from the "find" function result.
 
-* Additional functions you're free to use:
+# Additional functions you're free to use:
 
-> def stripComments(xml)
-> def escapeCDATA(xml)
-> def removeScriptTags(xml)
-> def getText(xml) - strips xml of any tags
-> def getTextLikeBrowser(xml) - strips tags, substitutes line break tags with newline characters and collapses whitespace
-> def collapseWhitespace(xml)
+* `def stripComments(xml)`
+* `def escapeCDATA(xml)`
+* `def removeScriptTags(xml)`
+* `def getText(xml)` - strips xml of any tags
+* `def getTextLikeBrowser(xml)` - strips tags, substitutes line break tags with newline characters and collapses whitespace
+* `def collapseWhitespace(xml)`
 
 2009 (C) Filip Sobalski <pinkeen@gmail.com>
