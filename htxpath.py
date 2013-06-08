@@ -2,9 +2,9 @@
 
 """
 
-	HTXPath python module
-	[X]HTML data extraction suite
-	2009 (c) Filip Sobalski <pinkeen@gmail.com>
+    HTXPath python module
+    [X]HTML data extraction suite
+    2009 (c) Filip Sobalski <pinkeen@gmail.com>
 
 
     This program is free software: you can redistribute it and/or modify
@@ -59,489 +59,489 @@ environment' somehow ?
 debug = False
 
 class PathParseError(Exception):
-	"""
-	Raised when errors concerning parsing path encountered.
-	"""
-	def __init__(self, msg):
-		self.msg = msg
-	def __str__(self):
-		return repr(self.msg)
+    """
+    Raised when errors concerning parsing path encountered.
+    """
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return repr(self.msg)
 
 class DataParseError(Exception):
-	"""
-	Raised when errors concerning parsing html data encountered.
-	"""
-	def __init__(self, msg):
-		self.msg = msg
-	def __str__(self):
-		return repr(self.msg)
+    """
+    Raised when errors concerning parsing html data encountered.
+    """
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return repr(self.msg)
 
 def httpQuery(address, form_data = {}, encoding = 'utf-8', timeout_secs = 5, max_retries = 4):
-	"""
-	Convenience function. Queries specified address. Query can include post data (ex. for logging in).
-	Handles timeouts/errors and retries if needed. Keeps track of cookies via global cookiejar.
-	Returns fetched data if successful and None on failure.
-	"""
+    """
+    Convenience function. Queries specified address. Query can include post data (ex. for logging in).
+    Handles timeouts/errors and retries if needed. Keeps track of cookies via global cookiejar.
+    Returns fetched data if successful and None on failure.
+    """
 
-	socket.setdefaulttimeout(timeout_secs)
+    socket.setdefaulttimeout(timeout_secs)
 
-	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
-	form_data_ = {}
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+    form_data_ = {}
 
-	for n, v in form_data.iteritems():
-		form_data_[n] = v.encode(encoding)
+    for n, v in form_data.iteritems():
+        form_data_[n] = v.encode(encoding)
 
-	login_data = urllib.urlencode(form_data_)
+    login_data = urllib.urlencode(form_data_)
 
-	request = urllib2.Request(address, login_data)
+    request = urllib2.Request(address, login_data)
 
-	request.add_header('connection', 'keep-alive')
-	request.add_header('user-agent', 'HTXPath')
+    request.add_header('connection', 'keep-alive')
+    request.add_header('user-agent', 'HTXPath')
 
-	retry_count = 0
+    retry_count = 0
 
-	while True:
-		if retry_count == max_retries:
-			# couldn't fetch any data
-			return None
+    while True:
+        if retry_count == max_retries:
+            # couldn't fetch any data
+            return None
 
-		retry_count += 1
+        retry_count += 1
 
-		try:
-			resp = opener.open(request, timeout = timeout_secs)
-		except (urllib2.URLError, httplib.BadStatusLine), e:
-			# connection error, retrying...
-			continue
-		try:
-			r = resp.read()
-		except socket.timeout:
-			# socket timeout, retrying...
-			continue
+        try:
+            resp = opener.open(request, timeout = timeout_secs)
+        except (urllib2.URLError, httplib.BadStatusLine), e:
+            # connection error, retrying...
+            continue
+        try:
+            r = resp.read()
+        except socket.timeout:
+            # socket timeout, retrying...
+            continue
 
-		return r
+        return r
 
 def stripComments(xml):
-	"""
-	Strips html comments.
-	"""
-	return comments_re.sub('', xml)
+    """
+    Strips html comments.
+    """
+    return comments_re.sub('', xml)
 
 def stripDOCTYPE(xml):
-	"""
-	Strips html DOCTYPE tag.
-	"""
-	return doctype_re.sub('', xml)
+    """
+    Strips html DOCTYPE tag.
+    """
+    return doctype_re.sub('', xml)
 
 def escapeCDATA(xml):
-	"""
-	Escapes strings contained in CDATA tags and strips xml of these tags.
-	Part of internal mechanism.
-	"""
-	cdatas = cdata_re.findall(xml)
+    """
+    Escapes strings contained in CDATA tags and strips xml of these tags.
+    Part of internal mechanism.
+    """
+    cdatas = cdata_re.findall(xml)
 
-	if len(cdatas) == 0:
-		return xml
+    if len(cdatas) == 0:
+        return xml
 
-	tmp = xml
-	xml = ''
+    tmp = xml
+    xml = ''
 
-	for cd in cdatas:
-		# FIX: following code is pretty fucked up, isn't it ?
-		cd = cd.replace('<', '&lt;').replace('>', '&gt;')
-		cd = amp_re.sub('&amp;', '<![CDATA[' + cd + ']]>')
-		tmp = cdata_re.sub(cd, tmp, 1)
-		f = cdata_re.search(tmp)
-		xml += tmp[:f.end()]
-		tmp = tmp[f.end():]
+    for cd in cdatas:
+        # FIX: following code is pretty fucked up, isn't it ?
+        cd = cd.replace('<', '&lt;').replace('>', '&gt;')
+        cd = amp_re.sub('&amp;', '<![CDATA[' + cd + ']]>')
+        tmp = cdata_re.sub(cd, tmp, 1)
+        f = cdata_re.search(tmp)
+        xml += tmp[:f.end()]
+        tmp = tmp[f.end():]
 
-	xml += tmp
+    xml += tmp
 
-	return cdata_re.sub('\\1', xml)
+    return cdata_re.sub('\\1', xml)
 
 def removeScriptTags(xml):
-	"""
-	Removes inline scripts. They rather should be escaped?
-	"""
+    """
+    Removes inline scripts. They rather should be escaped?
+    """
 
-	return script_tag_re.sub('', xml)
+    return script_tag_re.sub('', xml)
 
 def getText(xml):
-	"""
-	Strips tags and scripts from html.
-	"""
-	xml = script_tag_re.sub('', xml)
-	xml = strip_tags_re.sub('', xml)
-	return xml
+    """
+    Strips tags and scripts from html.
+    """
+    xml = script_tag_re.sub('', xml)
+    xml = strip_tags_re.sub('', xml)
+    return xml
 
 def getTextLikeBrowser(xml):
-	"""
-	Converts html to the form it is seen in a plain text browser.
-	"""
-	xml = line_break_re.sub('\n', xml)
-	xml = script_tag_re.sub('', xml)
-	xml = strip_tags_re.sub('', xml)
-	return fix_whitespace_re.sub(' ', xml).strip()
+    """
+    Converts html to the form it is seen in a plain text browser.
+    """
+    xml = line_break_re.sub('\n', xml)
+    xml = script_tag_re.sub('', xml)
+    xml = strip_tags_re.sub('', xml)
+    return fix_whitespace_re.sub(' ', xml).strip()
 
 def collapseWhitespace(xml):
-	return fix_whitespace_re.sub(' ', xml).strip()
+    return fix_whitespace_re.sub(' ', xml).strip()
 
 def getAttributes(xml):
-	"""
-	Returns dictionary of attributes of the first encountered tag in xml.
-	"""
-	s = tag_re.search(xml)
+    """
+    Returns dictionary of attributes of the first encountered tag in xml.
+    """
+    s = tag_re.search(xml)
 
-	if s == None: return None
+    if s == None: return None
 
-	attrs = s.groups()[2]
+    attrs = s.groups()[2]
 
-	if attrs == None: return None
+    if attrs == None: return None
 
-	res = {}
-	for name, devnull, value, devnull in attr_re.findall(attrs):
-		res[name.lower()] = value
+    res = {}
+    for name, devnull, value, devnull in attr_re.findall(attrs):
+        res[name.lower()] = value
 
-	return res
+    return res
 
 
 def parseCondition(pattern):
-	"""
-	Parses element's select condition (string contained between [] in path).
-	Part of internal mechanism.
-	"""
-	condition = condition_order_re.findall(pattern)
+    """
+    Parses element's select condition (string contained between [] in path).
+    Part of internal mechanism.
+    """
+    condition = condition_order_re.findall(pattern)
 
-	if len(condition) > 0:
-		return int(condition[0])
+    if len(condition) > 0:
+        return int(condition[0])
 
-	negate = False
+    negate = False
 
-	condition = condition_exists_re.findall(pattern)
+    condition = condition_exists_re.findall(pattern)
 
-	if len(condition) > 0:
-		qualifier, attribute = condition[0]
+    if len(condition) > 0:
+        qualifier, attribute = condition[0]
 
-		if len(qualifier) == 2:
-			negate = True
+        if len(qualifier) == 2:
+            negate = True
 
-		return (negate, re.compile('(?:\s|\A)' + re.escape(attribute) + '(?!\s*")(?:\s*\=\s*".*?")?', re.UNICODE))
+        return (negate, re.compile('(?:\s|\A)' + re.escape(attribute) + '(?!\s*")(?:\s*\=\s*".*?")?', re.UNICODE))
 
 
-	condition = condition_re.findall(pattern)
+    condition = condition_re.findall(pattern)
 
-	if len(condition) == 0:
-		raise PathParseError("cannot parse command condition '%s'" % (pattern))
+    if len(condition) == 0:
+        raise PathParseError("cannot parse command condition '%s'" % (pattern))
 
-	if debug: print "\t\t\tCondition: " + str(condition)
+    if debug: print "\t\t\tCondition: " + str(condition)
 
-	attribute, qualifier, value = condition[0]
-	if len(qualifier) == 2:
-		negate = True
-		qualifier = qualifier[1]
+    attribute, qualifier, value = condition[0]
+    if len(qualifier) == 2:
+        negate = True
+        qualifier = qualifier[1]
 
-	attribute = re.escape(attribute)
-	value = re.escape(value)
+    attribute = re.escape(attribute)
+    value = re.escape(value)
 
-	if attribute == r'\*':
-		attribute = '.*?'
+    if attribute == r'\*':
+        attribute = '.*?'
 
-	dre = ''
+    dre = ''
 
-	if qualifier == '=':
-		dre = r'(?:\s|\A)%s\s*\=\s*(\'|")%s\1'
+    if qualifier == '=':
+        dre = r'(?:\s|\A)%s\s*\=\s*(\'|")%s\1'
 
-	if qualifier == '~':
-		dre = r'(?:\s|\A)%s\s*\=\s*(\'|").*?%s.*?\1'
+    if qualifier == '~':
+        dre = r'(?:\s|\A)%s\s*\=\s*(\'|").*?%s.*?\1'
 
-	if qualifier == '^':
-		dre = r'(?:\s|\A)%s\s*\=\s*(\'|")%s.*?\1'
+    if qualifier == '^':
+        dre = r'(?:\s|\A)%s\s*\=\s*(\'|")%s.*?\1'
 
-	return (negate, re.compile(dre % (attribute, value), re.UNICODE))
+    return (negate, re.compile(dre % (attribute, value), re.UNICODE))
 
 def parseCommand(command):
-	"""
-	Returns parsed command (part of the path delimited by slashes) string.
-	"""
-	gscope = False
-	scope, element = element_re.findall(command)[0]
+    """
+    Returns parsed command (part of the path delimited by slashes) string.
+    """
+    gscope = False
+    scope, element = element_re.findall(command)[0]
 
-	if len(element) == 0:
-		raise PathParseError("cannot parse command: tag name not found in '%s'" % (command))
+    if len(element) == 0:
+        raise PathParseError("cannot parse command: tag name not found in '%s'" % (command))
 
-	if len(scope) == 2: gscope = True
+    if len(scope) == 2: gscope = True
 
-	if debug:	print "\t\tElement: " + element + " (global scope: " + str(gscope) + ")"
+    if debug:   print "\t\tElement: " + element + " (global scope: " + str(gscope) + ")"
 
-	patterns = pattern_re.findall(command)
+    patterns = pattern_re.findall(command)
 
-	conditions = []
+    conditions = []
 
-	for pattern in patterns:
-		pp = parseCondition(pattern)
-		conditions.append(pp)
-		if debug:	print "\t\tPattern: " + str(pp)
+    for pattern in patterns:
+        pp = parseCondition(pattern)
+        conditions.append(pp)
+        if debug:   print "\t\tPattern: " + str(pp)
 
-	return (gscope, element, conditions)
+    return (gscope, element, conditions)
 
 
 def find(xml, pth):
-	"""
-	Parses path string and returns elements conforming to the path in the xml string.
-	"""
-	if debug: print "Path: " + pth
+    """
+    Parses path string and returns elements conforming to the path in the xml string.
+    """
+    if debug: print "Path: " + pth
 
-	command_strings = command_re.findall(pth)
-	commands = []
+    command_strings = command_re.findall(pth)
+    commands = []
 
-	for c in command_strings:
-		if debug: print "\tCommand: " + c
-		commands.append(parseCommand(c))
+    for c in command_strings:
+        if debug: print "\tCommand: " + c
+        commands.append(parseCommand(c))
 
-	if len(commands) == 0:
-		raise PathParseError("found no usable commands in path")
+    if len(commands) == 0:
+        raise PathParseError("found no usable commands in path")
 
-	xml = removeScriptTags(xml)
-	xml = escapeCDATA(xml)
-	xml = stripComments(xml)
-	xml = stripDOCTYPE(xml)
-	xml = removeOrphanedTags(xml)
+    xml = removeScriptTags(xml)
+    xml = escapeCDATA(xml)
+    xml = stripComments(xml)
+    xml = stripDOCTYPE(xml)
+    xml = removeOrphanedTags(xml)
 
-	return findIn(xml, commands)
+    return findIn(xml, commands)
 
 
 def findIn(xml, commands):
-	"""
-	Returns searches for tags conforming to parsed command path. Recurses if has to go into
-	a nested tag.
-	"""
-	if debug: print "\tStarting parsing loop..."
+    """
+    Returns searches for tags conforming to parsed command path. Recurses if has to go into
+    a nested tag.
+    """
+    if debug: print "\tStarting parsing loop..."
 
-	found = []
+    found = []
 
-	content = xml
+    content = xml
 
-	ci = 0
-	count = 0
+    ci = 0
+    count = 0
 
-	while True:
-		gs, ctg, ccn = commands[0]
+    while True:
+        gs, ctg, ccn = commands[0]
 
-		ctg = ctg.lower()
+        ctg = ctg.lower()
 
-		f = tag_re.search(content)
+        f = tag_re.search(content)
 
-		if f == None: return found
+        if f == None: return found
 
-		end, tag, attr, cls = f.groups()
+        end, tag, attr, cls = f.groups()
 
-		tag = tag.lower()
+        tag = tag.lower()
 
-		if debug:
-			print "\t\tNext iter..."
-			print "\t\tTag: ", f.groups()
-			print "\t\tCount: ", count
+        if debug:
+            print "\t\tNext iter..."
+            print "\t\tTag: ", f.groups()
+            print "\t\tCount: ", count
 
-		if end == None:
-			if (tag == ctg or ctg == '*'): count += 1
+        if end == None:
+            if (tag == ctg or ctg == '*'): count += 1
 
-			if (tag == ctg or ctg == '*') and checkConditions(ccn, attr, count):
-				if debug: print "\t\tCommand MATCHED."
+            if (tag == ctg or ctg == '*') and checkConditions(ccn, attr, count):
+                if debug: print "\t\tCommand MATCHED."
 
-				if cls == None:
-					endpos = getEndTagPos(content[f.end():], tag) + f.end()
-					tmp = content[f.end():endpos]
+                if cls == None:
+                    endpos = getEndTagPos(content[f.end():], tag) + f.end()
+                    tmp = content[f.end():endpos]
 
-					if len(commands) > 1:
-						if debug: print "\tGoing IN."
-						found.extend(findIn(tmp, commands[1:]))
-						if debug: print "\tComing OUT."
-					else:
-						found.append(content[f.start():endpos])
+                    if len(commands) > 1:
+                        if debug: print "\tGoing IN."
+                        found.extend(findIn(tmp, commands[1:]))
+                        if debug: print "\tComing OUT."
+                    else:
+                        found.append(content[f.start():endpos])
 
-					if gs: content = content[f.end():]
-					else: content = content[endpos:]
+                    if gs: content = content[f.end():]
+                    else: content = content[endpos:]
 
-				else:
-					if len(commands) == 1:
-						found.append(content[f.start():f.end()])
-					content = content[f.end():]
+                else:
+                    if len(commands) == 1:
+                        found.append(content[f.start():f.end()])
+                    content = content[f.end():]
 
-			else:
-				if not gs and cls == None:
-					if debug: print "\t\tNot global scope, not found. Skipping tag..."
-					endpos = getEndTagPos(content[f.end():], tag) + f.end()
-					content = content[endpos:]
-				else:
-					if debug: print "\t\tGlobal scope, not found. Advancing to next tag..."
-					content = content[f.end():]
-		else:
-			if debug: print "\t\tEnding tag found. Advancing to next tag..."
-			content = content[f.end():]
+            else:
+                if not gs and cls == None:
+                    if debug: print "\t\tNot global scope, not found. Skipping tag..."
+                    endpos = getEndTagPos(content[f.end():], tag) + f.end()
+                    content = content[endpos:]
+                else:
+                    if debug: print "\t\tGlobal scope, not found. Advancing to next tag..."
+                    content = content[f.end():]
+        else:
+            if debug: print "\t\tEnding tag found. Advancing to next tag..."
+            content = content[f.end():]
 
 
 
 def checkConditions(conditions, attributes, count):
-	"""
-	Checks if the attributes fullfill parsed conditions (among them tag order count if applicable).
-	"""
-	if attributes == None: 	attributes = ''
-	if len(conditions) == 0: return True
+    """
+    Checks if the attributes fullfill parsed conditions (among them tag order count if applicable).
+    """
+    if attributes == None:  attributes = ''
+    if len(conditions) == 0: return True
 
-	for c in conditions:
-		if type(c) == int:
-			if count != c:
-				return False
-		else:
-			neg, exp = c
-			res = exp.search(attributes)
+    for c in conditions:
+        if type(c) == int:
+            if count != c:
+                return False
+        else:
+            neg, exp = c
+            res = exp.search(attributes)
 
-			if res and neg:
-				return False
-			if not res and not neg:
-				return False
+            if res and neg:
+                return False
+            if not res and not neg:
+                return False
 
-	return True
+    return True
 
 def getEndTagPos(xml, tag):
-	"""
-	Returns position of the ending of the appropriate closing tag in the xml string.
-	"""
-	tstack = []
+    """
+    Returns position of the ending of the appropriate closing tag in the xml string.
+    """
+    tstack = []
 
-	pos = 0
+    pos = 0
 
-	while True:
-		ef = tag_re.search(xml, pos)
-		eend, etag, eattr, ecls = ef.groups()
+    while True:
+        ef = tag_re.search(xml, pos)
+        eend, etag, eattr, ecls = ef.groups()
 
-		etag = etag.lower()
-		pos = ef.end()
+        etag = etag.lower()
+        pos = ef.end()
 
-		if ecls == None and etag.strip() != 'br':
-			if eend == None:
-				tstack.append(etag)
-			else:
-				if len(tstack) == 0 and etag == tag:
-					break
+        if ecls == None and etag.strip() != 'br':
+            if eend == None:
+                tstack.append(etag)
+            else:
+                if len(tstack) == 0 and etag == tag:
+                    break
 
-				# tag nesting fix
+                # tag nesting fix
 
-				# will not work with all badly nested tags - will fail in certain situations depending on the path ;(
+                # will not work with all badly nested tags - will fail in certain situations depending on the path ;(
 
-				# PROB:	what if tag whose ending we're searching for contains badly nested (not closed within it) tags ?
-				# 	DataParseError below is thrown on its ending encountered, ouch...
+                # PROB: what if tag whose ending we're searching for contains badly nested (not closed within it) tags ?
+                #   DataParseError below is thrown on its ending encountered, ouch...
 
-				ttstack = []
-				while True:
-					if len(tstack) == 0:
-						# fix for PROB:
-						if tag == etag:
-							# so, is this the ending we hoped for ?
-							return pos
-						else:
-							raise DataParseError("could not find corresponding end tag for '%s': found end tag '%s' withouth starting tag (tag stack empty)" % (tag, etag))
+                ttstack = []
+                while True:
+                    if len(tstack) == 0:
+                        # fix for PROB:
+                        if tag == etag:
+                            # so, is this the ending we hoped for ?
+                            return pos
+                        else:
+                            raise DataParseError("could not find corresponding end tag for '%s': found end tag '%s' withouth starting tag (tag stack empty)" % (tag, etag))
 
-					ft = tstack.pop()
+                    ft = tstack.pop()
 
-					if ft == etag:
-						tstack.extend(ttstack)
-						break
-					else:
-						ttstack.insert(0, ft)
+                    if ft == etag:
+                        tstack.extend(ttstack)
+                        break
+                    else:
+                        ttstack.insert(0, ft)
 
-	return pos
+    return pos
 
 def removeOrphanedTags(xml):
-	"""
-	Closes/removes open tags.
-	"""
+    """
+    Closes/removes open tags.
+    """
 
-	ostack = []
-	cstack = []
+    ostack = []
+    cstack = []
 
-	pos = 0
+    pos = 0
 
-	while True:
-		ef = tag_re.search(xml, pos)
+    while True:
+        ef = tag_re.search(xml, pos)
 
-		if ef == None:
-			break
+        if ef == None:
+            break
 
-		eend, etag, eattr, ecls = ef.groups()
-		etag = etag.lower()
+        eend, etag, eattr, ecls = ef.groups()
+        etag = etag.lower()
 
-		if ecls == None and etag.strip() != 'br':
-			if eend == None:
-				ostack.append((etag, ef.start()))
-			else:
-				ostack_tmp = []
+        if ecls == None and etag.strip() != 'br':
+            if eend == None:
+                ostack.append((etag, ef.start()))
+            else:
+                ostack_tmp = []
 
-				while True:
-					if len(ostack) == 0:
-						cstack.append((etag, ef.start()))
-						ostack.extend(ostack_tmp)
-						break
+                while True:
+                    if len(ostack) == 0:
+                        cstack.append((etag, ef.start()))
+                        ostack.extend(ostack_tmp)
+                        break
 
-					ft, start = ostack.pop()
+                    ft, start = ostack.pop()
 
-					if ft == etag:
-						ostack.extend(ostack_tmp)
-						break
-					else:
-						ostack_tmp.insert(0, (ft, start))
+                    if ft == etag:
+                        ostack.extend(ostack_tmp)
+                        break
+                    else:
+                        ostack_tmp.insert(0, (ft, start))
 
-		pos = ef.end()
+        pos = ef.end()
 
-	if debug: print "\t\t\t\tRemoving orpahned tags..."
+    if debug: print "\t\t\t\tRemoving orpahned tags..."
 
-	ostack.extend(cstack)
+    ostack.extend(cstack)
 
-	shift = 0
+    shift = 0
 
-	for t in ostack:
-		tag, start = t
+    for t in ostack:
+        tag, start = t
 
-		if debug: print "\t\t\t\tTag '%s' starts at %d " % (tag, start + shift)
+        if debug: print "\t\t\t\tTag '%s' starts at %d " % (tag, start + shift)
 
-		ef = tag_re.search(xml, start + shift)
+        ef = tag_re.search(xml, start + shift)
 
-		tag = ef.group()
-		eend = ef.groups()[0]
+        tag = ef.group()
+        eend = ef.groups()[0]
 
-		if eend:
-			xml = xml[:ef.start()] + xml[ef.end():]
-			shift -= len(tag)
-		else:
-			xml = xml[:ef.start()] + tag[:len(tag) - 1] + '/>' + xml[ef.end():]
-			shift += 1
+        if eend:
+            xml = xml[:ef.start()] + xml[ef.end():]
+            shift -= len(tag)
+        else:
+            xml = xml[:ef.start()] + tag[:len(tag) - 1] + '/>' + xml[ef.end():]
+            shift += 1
 
-		if debug: print "\t\t\t\tFound tag : " + ef.group().strip()
+        if debug: print "\t\t\t\tFound tag : " + ef.group().strip()
 
-	return xml
-			
+    return xml
+            
 
 if __name__ == "__main__":
 
-	print "HTXPath python module (testing app)"
-	print "[X]HTML data extraction suite"
-	print "2009 (c) Filip Sobalski <pinkeen@gmail.com>"
-	print "\nInstructions:\nSupply PATH string as first argument.\nFeed XHTML into the STDIN or supply URL as the second argument.\n"
+    print "HTXPath python module (testing app)"
+    print "[X]HTML data extraction suite"
+    print "2009 (c) Filip Sobalski <pinkeen@gmail.com>"
+    print "\nInstructions:\nSupply PATH string as first argument.\nFeed XHTML into the STDIN or supply URL as the second argument.\n"
 
-	if len(sys.argv) == 3:
-		d = httpQuery(sys.argv[2])
-	else:
-		d = sys.stdin.read()
+    if len(sys.argv) == 3:
+        d = httpQuery(sys.argv[2])
+    else:
+        d = sys.stdin.read()
 
-	f = find(d, sys.argv[1])
+    f = find(d, sys.argv[1])
 
-	if len(f) == 0:
-		print "-> No element matching path '%s' found." % (sys.argv[1])
+    if len(f) == 0:
+        print "-> No element matching path '%s' found." % (sys.argv[1])
 
-	for i in range(0, len(f)):
-		print "-> Result %d of %d : " % (i + 1, len(f))
-		print "-> Found tag attributes: " + str(getAttributes(f[i]))
-		print f[i]
-	
+    for i in range(0, len(f)):
+        print "-> Result %d of %d : " % (i + 1, len(f))
+        print "-> Found tag attributes: " + str(getAttributes(f[i]))
+        print f[i]
+    
 
 
 

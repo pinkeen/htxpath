@@ -79,7 +79,7 @@ It returns a dictionary of attributes with their corresponding values of the out
 
 # Legal mumbo-jumbo
 
-2009 (C) Filip Sobalski <pinkeen@gmail.com>
+2009 &copy; Filip Sobalski <pinkeen@gmail.com>
 
 This file is part of HTXPath.
 
