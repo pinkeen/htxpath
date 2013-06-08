@@ -2,9 +2,13 @@
 
 ## What is it for?
 
-HTXPath is a python module which simplifies the task of extracting pieces of data from [x]html (or like) documents.
+HTXPath is a python module which simplifies the task of extracting pieces of data from [x]html (or like) documents. You would usually use it
+for web data scraping.
 
-You specify a PATH string (somewhat similar in syntax and principles to XPath) that defines an unambiguous set of elements within a document.
+## How does it work?
+
+You provide a *path* string (somewhat similar in syntax and principles to XPath) that defines an unambiguous set of elements within a document and you get
+a list with elements that match your *path*.
 
 ## Why HTXPath?
 
@@ -27,55 +31,121 @@ It uses regexps only find small chunks of data in small chunks of data. The gene
 
 ## Features
 
-* Fast, saves memory
-* Familiar syntax (similar to XPath)
-* Escapes CDATA
+* Fast.
+* Low memory footprint.
+* Familiar syntax (similar to XPath).
 * Fixes orphaned tags: Closes tags which doesn't have '/' or a corresponding closing tag. Removes closing tags which doesn't have opening ones.
-* Copes with badly nested tags in SOME situations. SO DON'T COUNT ON IT!
-* Should work well with UNICODE input.
+* Copes with badly nested tags in SOME situations.
+* Works with unicode input.
+
+## Error resistance
+
+Because HTXPath processes the input like a stream it skips the portions that doesn't interest it. For example - it means that you can get
+around badly-formed html by constructing a *path* that does not encompass the areas with errors.
 
 ## Basic usage
 
-Before you start:
+**Read this before you start!**
 * HTXPath strips documents of HTML comments and scripts before even parsing begins. That probably will be fixed sometime.
 * DOCTYPE is also stripped and it won't be fixed because there are plenty of ways to get it without using such sophisticated (yeah, right ;)) tools.
 * CDATA is liquidated but its content is left intact with crucial html entities escaped.
 
-Probably the only function you will be needing is `htxpath.find(xml, pth)`.
+### The path string
 
-Where `xml` is your data (not necesarilly XML) and `pth` is the "command path string" (referred to as THE PATH). Function will return a list (always) of strings containig matched tags with everything inside them, so you can extract their attributes.
+The path consist of *commands* which are separated by slashes (`/`) or double-slashes (`//`). 
+For example `//body/div[class=main]` is parsed into two commands: `body` and `div[class=main]`.
 
-Path consist of "commands" which are separated by slashes (/) or double-slashes (//). For example `//body/div[class=main]` gives us two commands: `body` and `div[class=main]`.
+Each command consists of a tag name and a condition contained in square brackets (`[]`).
 
-Each command consists of tag name and a condition contained in square brackets ([]).
+Single slash tells the parser thath the command should only match tags nested directly below (inside) the previous tag or document root.
+The double slash means that all nesting levels below the previous tag matched will be checked. 
+The number of double slash separators in your path is unlimited and they can be present at any level - unlike in the XPath.
 
-Single slash tells the parser to match the command only to tags nested directly below (inside) the previous tag or document root, whereas the double slash means that all nesting levels below the previous tag matched will be checked. You can have unlimited number of double slash separators in your path and they can be anywhere - unlike in the XPath.
+A command can encompass multiple conditions (ex. `div[class=test][id=main]`). 
+The command matches the tag when all conditions are met.
 
-A command can have multiple conditions (ex. `div[class=test][id=main]`). The command matches the tag when all conditions are met.
+#### Conditions
 
-Condition types reference:
 * `[number]` - ex. `div[4]` means that the fourth div within current scope is matched
-* `[attribute=value]` - self-explanatory
-* `attribute^value]` - attribute starts with value
+* `[attribute=value]` - attribute matches the value exactly
+* `[attribute^value]` - attribute starts with value
 * `[attribute~value]` - attribute contains value
 * `[#attribute]` - matches if attribute is present in the tag regardless of its value
 
-Each of the qualifiers (#,^,~,=) can be negated with "!" sign (!#,!^,!~,!=).
+Each of the qualifiers (`#`, `^`, `~`, `=`) can be negated with `!` sign (`!#`, `!^`, `!~`, `!=`).
 
-Attribute and tag names can be substituted with "*" character - then they are treated as wildcards and match any string. For example `//*[*=hello]` will match any tag anywhere in the document as long as it contains any attribute with the value "hello".
+#### Wildcards
 
-Another very handy function is: `htxpath.getAttributes(xml)`.
+Attribute and tag names can be substituted with wildcard (`*`) character. 
+For example `//*[*=hello]` will match any tag anywhere in the document as long as it contains any attribute with the value "hello".
 
-It returns a dictionary of attributes with their corresponding values of the outer wrapping tag (in other words - the first encountered) in the xml string. Just feed it with an element from the `find` function's result.
+### Functions
 
-# Some more cruft you can use:
+_All functions assume **unicode** strings._
 
-* `htxpath.stripComments(xml)`
-* `htxpath.escapeCDATA(xml)`
-* `htxpath.removeScriptTags(xml)`
-* `htxpath.getText(xml)` - strips xml of any tags
-* `htxpath.getTextLikeBrowser(xml)` - strips tags, substitutes line break tags with newline characters and collapses whitespace
-* `htxpath.collapseWhitespace(xml)`
+#### `htxpath.find(xml, pth)`
+
+Parses the string `xml` and (always) returns an list of strings that match the path `pth`.
+
+The strings contain matched tags with everything inside them, so you can extract their attributes.
+
+#### `htxpath.getAttributes(xml)`
+
+Parses the outer wrapping tag (in other words - the first encountered) in the `xml` string and returns its attributes as a dictionary.
+Just feed it with an element from the `htxpath.find` function's result.
+
+#### `htxpath.getTextLikeBrowser(xml)`
+
+Strips `xml` string of tags, substitutes line break tags with newline characters and collapses whitespace.
+
+#### `htxpath.getText(xml)`
+
+Strips `xml` string of any tags leaving only the text.
+
+#### `htxpath.stripComments(xml)`
+
+Strips HTML comments from `xml` string.
+
+#### `htxpath.collapseWhitespace(xml)`
+
+Collapses withespace in `xml` string.
+
+# Example usage
+
+*No error checking, just pure fun.*
+
+Demonstrates API not the paths.
+
+## Get the title
+
+```python
+result = htxpath.find(html, '//title')[0]
+title = htxpath.getTextLikeBrowser(result)
+```
+
+## Get all links in a div
+
+```python
+links = []
+result = htxpath.find(html, '//a[#href]')
+
+for anchor in result:
+    attrs = htxpath.getAttributes(anchor)
+    text = htxpath.getTextLikeBrowser(anchor)
+    href = attrs['href']
+    links.append((href, text))
+```
+
+# Is it production ready?
+
+Well, it depends on what you mean by *production*. Usually data scrapers encounter a lot of errors and have to deal with them somehow
+(skip the erroneus items perhaps?), so moderate error rate is acceptable.
+
+It all depends on your use case. If you have a lot of different sites (based on a lot of templates) the you must find out if the overall error
+rate is acceptable. If you scrape a lot of pages rendered from a few templates then you may achieve 0% error rate even without any fine-tuning.
+
+Personally, I used it in production with great results. Scraped data from some seriously broken HTML. Occasionaly I encountered some show-stopping
+errors but there is a lot of data out there, you can just try to find another, less-broken source.
 
 # Legal mumbo-jumbo
 
@@ -96,19 +166,3 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-Niniejszy program jest wolnym oprogramowaniem; możesz go
-rozprowadzać dalej i/lub modyfikować na warunkach Powszechnej
-Licencji Publicznej GNU, wydanej przez Fundację Wolnego
-Oprogramowania - według wersji 2 tej Licencji lub (według twojego
-wyboru) którejś z późniejszych wersji.
-
-Niniejszy program rozpowszechniany jest z nadzieją, iż będzie on
-użyteczny - jednak BEZ JAKIEJKOLWIEK GWARANCJI, nawet domyślnej
-gwarancji PRZYDATNOŚCI HANDLOWEJ albo PRZYDATNOŚCI DO OKREŚLONYCH
-ZASTOSOWAŃ. W celu uzyskania bliższych informacji sięgnij do
-Powszechnej Licencji Publicznej GNU.
-
-Z pewnością wraz z niniejszym programem otrzymałeś też egzemplarz
-Powszechnej Licencji Publicznej GNU (GNU General Public License);
-jeśli nie - napisz do Free Software Foundation, Inc., 59 Temple
-Place, Fifth Floor, Boston, MA  02110-1301  USA

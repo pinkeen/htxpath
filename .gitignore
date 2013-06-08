@@ -1,3 +1,4 @@
 *.pyc
 *.kate-swp
 __pycache__/*
+test.htm
