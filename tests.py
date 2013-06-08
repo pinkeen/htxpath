@@ -1,10 +1,13 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
     Sample HTXPath unit testing module.
     Fell free to use it as a template.
     Put your input data into testData dir.
 '''
+
+from __future__ import print_function
 
 import unittest
 import htxpath
@@ -21,7 +24,7 @@ class BasicTests(unittest.TestCase):
 
     def setUp(self):
         f = open("test_data/test.htm", "rb")
-        self.testData = f.read()
+        self.testData = f.read().decode('utf-8')
         f.close()
 
     def testBasicPath(self):

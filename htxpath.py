@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 
@@ -22,16 +23,10 @@
 
 """
 
+from __future__ import print_function
+
 import sys
 import re
-
-import urllib
-import urllib2
-import cookielib
-import socket
-import httplib
-
-cookiejar = cookielib.CookieJar()
 
 command_re = re.compile(r'(/{1,2}.*?)(?=(?:/|$))', re.UNICODE)
 pattern_re = re.compile(r'\[(.*?)\]', re.UNICODE)
@@ -75,50 +70,6 @@ class DataParseError(Exception):
         self.msg = msg
     def __str__(self):
         return repr(self.msg)
-
-def httpQuery(address, form_data = {}, encoding = 'utf-8', timeout_secs = 5, max_retries = 4):
-    """
-    Convenience function. Queries specified address. Query can include post data (ex. for logging in).
-    Handles timeouts/errors and retries if needed. Keeps track of cookies via global cookiejar.
-    Returns fetched data if successful and None on failure.
-    """
-
-    socket.setdefaulttimeout(timeout_secs)
-
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
-    form_data_ = {}
-
-    for n, v in form_data.iteritems():
-        form_data_[n] = v.encode(encoding)
-
-    login_data = urllib.urlencode(form_data_)
-
-    request = urllib2.Request(address, login_data)
-
-    request.add_header('connection', 'keep-alive')
-    request.add_header('user-agent', 'HTXPath')
-
-    retry_count = 0
-
-    while True:
-        if retry_count == max_retries:
-            # couldn't fetch any data
-            return None
-
-        retry_count += 1
-
-        try:
-            resp = opener.open(request, timeout = timeout_secs)
-        except (urllib2.URLError, httplib.BadStatusLine), e:
-            # connection error, retrying...
-            continue
-        try:
-            r = resp.read()
-        except socket.timeout:
-            # socket timeout, retrying...
-            continue
-
-        return r
 
 def stripComments(xml):
     """
@@ -232,7 +183,7 @@ def parseCondition(pattern):
     if len(condition) == 0:
         raise PathParseError("cannot parse command condition '%s'" % (pattern))
 
-    if debug: print "\t\t\tCondition: " + str(condition)
+    if debug: print("\t\t\tCondition: %s" % str(condition))
 
     attribute, qualifier, value = condition[0]
     if len(qualifier) == 2:
@@ -270,7 +221,7 @@ def parseCommand(command):
 
     if len(scope) == 2: gscope = True
 
-    if debug:   print "\t\tElement: " + element + " (global scope: " + str(gscope) + ")"
+    if debug: print("\t\tElement: %s (global scope: %s)" % (element, str(gscope)))
 
     patterns = pattern_re.findall(command)
 
@@ -279,7 +230,7 @@ def parseCommand(command):
     for pattern in patterns:
         pp = parseCondition(pattern)
         conditions.append(pp)
-        if debug:   print "\t\tPattern: " + str(pp)
+        if debug: print("\t\tPattern: %s" % str(pp))
 
     return (gscope, element, conditions)
 
@@ -288,13 +239,13 @@ def find(xml, pth):
     """
     Parses path string and returns elements conforming to the path in the xml string.
     """
-    if debug: print "Path: " + pth
+    if debug: print("Path: %s" % pth)
 
     command_strings = command_re.findall(pth)
     commands = []
 
     for c in command_strings:
-        if debug: print "\tCommand: " + c
+        if debug: print("\tCommand: %s" % c)
         commands.append(parseCommand(c))
 
     if len(commands) == 0:
@@ -314,7 +265,7 @@ def findIn(xml, commands):
     Returns searches for tags conforming to parsed command path. Recurses if has to go into
     a nested tag.
     """
-    if debug: print "\tStarting parsing loop..."
+    if debug: print("\tStarting parsing loop...")
 
     found = []
 
@@ -337,24 +288,24 @@ def findIn(xml, commands):
         tag = tag.lower()
 
         if debug:
-            print "\t\tNext iter..."
-            print "\t\tTag: ", f.groups()
-            print "\t\tCount: ", count
+            print("\t\tNext iter...")
+            print("\t\tTag: %s" % repr(f.groups()))
+            print("\t\tCount: %s" % count)
 
         if end == None:
             if (tag == ctg or ctg == '*'): count += 1
 
             if (tag == ctg or ctg == '*') and checkConditions(ccn, attr, count):
-                if debug: print "\t\tCommand MATCHED."
+                if debug: print("\t\tCommand MATCHED.")
 
                 if cls == None:
                     endpos = getEndTagPos(content[f.end():], tag) + f.end()
                     tmp = content[f.end():endpos]
 
                     if len(commands) > 1:
-                        if debug: print "\tGoing IN."
+                        if debug: print("\tGoing IN.")
                         found.extend(findIn(tmp, commands[1:]))
-                        if debug: print "\tComing OUT."
+                        if debug: print("\tComing OUT.")
                     else:
                         found.append(content[f.start():endpos])
 
@@ -368,14 +319,14 @@ def findIn(xml, commands):
 
             else:
                 if not gs and cls == None:
-                    if debug: print "\t\tNot global scope, not found. Skipping tag..."
+                    if debug: print("\t\tNot global scope, not found. Skipping tag...")
                     endpos = getEndTagPos(content[f.end():], tag) + f.end()
                     content = content[endpos:]
                 else:
-                    if debug: print "\t\tGlobal scope, not found. Advancing to next tag..."
+                    if debug: print("\t\tGlobal scope, not found. Advancing to next tag...")
                     content = content[f.end():]
         else:
-            if debug: print "\t\tEnding tag found. Advancing to next tag..."
+            if debug: print("\t\tEnding tag found. Advancing to next tag...")
             content = content[f.end():]
 
 
@@ -492,7 +443,7 @@ def removeOrphanedTags(xml):
 
         pos = ef.end()
 
-    if debug: print "\t\t\t\tRemoving orpahned tags..."
+    if debug: print("\t\t\t\tRemoving orpahned tags...")
 
     ostack.extend(cstack)
 
@@ -501,7 +452,7 @@ def removeOrphanedTags(xml):
     for t in ostack:
         tag, start = t
 
-        if debug: print "\t\t\t\tTag '%s' starts at %d " % (tag, start + shift)
+        if debug: print("\t\t\t\tTag '%s' starts at %d " % (tag, start + shift))
 
         ef = tag_re.search(xml, start + shift)
 
@@ -515,32 +466,30 @@ def removeOrphanedTags(xml):
             xml = xml[:ef.start()] + tag[:len(tag) - 1] + '/>' + xml[ef.end():]
             shift += 1
 
-        if debug: print "\t\t\t\tFound tag : " + ef.group().strip()
+        if debug: print("\t\t\t\tFound tag : " + ef.group().strip())
 
     return xml
             
 
 if __name__ == "__main__":
 
-    print "HTXPath python module (testing app)"
-    print "[X]HTML data extraction suite"
-    print "2009 (c) Filip Sobalski <pinkeen@gmail.com>"
-    print "\nInstructions:\nSupply PATH string as first argument.\nFeed XHTML into the STDIN or supply URL as the second argument.\n"
+    print("HTXPath python module (testing app)")
+    print("2009 (c) Filip Sobalski <pinkeen@gmail.com>")
 
-    if len(sys.argv) == 3:
-        d = httpQuery(sys.argv[2])
-    else:
-        d = sys.stdin.read()
-
+    if len(sys.argv) != 2:
+        print("Usage:\n\t %s <PATH>" % sys.argv[0])
+        print("\tFeed the data to stdin. Assumes UTF-8 input.")
+        
+    d = sys.stdin.read().decode('utf-8')
     f = find(d, sys.argv[1])
 
     if len(f) == 0:
-        print "-> No element matching path '%s' found." % (sys.argv[1])
+        print("-> No element matching path '%s' found." % (sys.argv[1]))
 
     for i in range(0, len(f)):
-        print "-> Result %d of %d : " % (i + 1, len(f))
-        print "-> Found tag attributes: " + str(getAttributes(f[i]))
-        print f[i]
+        print("-> Result %d of %d : " % (i + 1, len(f)))
+        print("-> Found tag attributes: " + str(getAttributes(f[i])))
+        print(f[i])
     
 
 
